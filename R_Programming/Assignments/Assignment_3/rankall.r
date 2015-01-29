@@ -1,4 +1,5 @@
-## Function to get the specified rank of hospital based on the lowest 30 day depth rate for specified outcome for ALL state
+## Function to get the specified rank of hospital based on the lowest 
+## 30 day depth rate for specified outcome for ALL state
 rankall <- function(outcome, num = "best") {
       ## Read outcome data
       Data = read.csv("outcome-of-care-measures.csv", colClasses = "character")

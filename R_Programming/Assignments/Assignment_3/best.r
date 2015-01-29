@@ -1,4 +1,5 @@
-## Function to get the best hospital based on lowest 30-day death rate of specified outcome and state
+## Function to get the best hospital based on lowest 30
+## day death rate of specified outcome and state
 best <- function(state, outcome) {
       ## Read outcome data
       Data = read.csv("outcome-of-care-measures.csv", colClasses = "character")

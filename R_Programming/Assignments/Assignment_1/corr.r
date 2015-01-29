@@ -1,7 +1,5 @@
 # Function to calculate the correlation between sulfate and nitrate 
 # for specified monitor files
-
-
 corr <- function(directory, threshold = 0) {
    
   ## 'directory' is a character vector of length 1 indicating

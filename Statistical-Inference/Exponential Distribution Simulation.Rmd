@@ -1,79 +1,83 @@
 ---
-output: pdf_document
+output:
+  pdf_document:
+    highlight: tango
+  html_document: default
 ---
 
-## Exponential Distribution Simulation and Demonstrate Central Limit Theorem
+ Exponential Distribution Simulation and Demonstrate Central Limit Theorem
+---
+ Author: Ziwen Yu  
+ Date: `r Sys.Date()`  
+--------------------------------------------------------------------------------------------
 
-##### Author: Ziwen Yu  
-##### Date: 2015-02-09  
-
--------------
-
-This report, generated in **knitr**, contains the simulation on exponential distribution and demonstratation of the "Central Limit Theorem". The analysis is  performed in **R** and uses **ggplot2** for plotting.
-The rate of exponential distribution which the random numbers are generated from is **0.2**.  
-
-**Steps of this analysis:**  
-
-1. Generate 1000 sets of 40 exponentially distributed random numbers using rexp() and calculate the mean of each set
-
-2. Estimate the mean and variance of the sample means with the theoretical mean and variance
-
-3. Test the normality of the distribution of sample means   
+This report, generated in **knitr**, contains a simulation on exponential distribution and a demonstratation of the "Central Limit Theorem". The analysis is  performed in **R** and uses **ggplot2** for plotting.
+The rate of exponential distribution which the random numbers are generated from is **$\lambda=0.2$**.  
 
 
-####Step 1:
+**Step 1**:  
+
 ```{r}
 set.seed(10)      # set seed for generating random numbers
 rate=0.2          # Rate of exponential distribution
 n=40              # Number of samples for each sample set
+N_rep=1000        # Replication times
 
 # Generate 40 exponentially distributed random numbers for a sample set
 # Calculate the mean of each sample set
 # Replicate this process 1000 times
-Dt=data.frame(Means=replicate(1000,mean(rexp(n,rate))))
+Dt=data.frame(Means=replicate(N_rep,mean(rexp(n,rate))))
 
 summary(Dt$Means)
 ```
 
-####Step 2:  
-It could be seen from the following code that the sample mean (**5.04506**) is very close to the theoretical mean of the population (**5**). 
+**Step 2**:  
+
+It could be seen from the following code that the sample mean (5.04506) is very close to the theoretical mean of the population ($\lambda^{-1}$= `r 1/rate`). 
 ```{r}
 
 1/rate            # Theoretical mean
 mean(Dt$Means)    # Sample mean
 
 ```
-The sample variance (**25.49018**) is also very close to the theoretical variance which is **25**.
+The sample variance (0.6372544) is also very close to the theoretical variance which is $\sigma^2 / n = 1/(\lambda^2 n)$ =`r 1/(0.04 * 40)`.
 ```{r}
 
-(1/rate)^2        # Theoretical variance
-sd(Dt$Means)^2*n  # Sample variance
+1/rate^2/n        # Theoretical variance)
+sd(Dt$Means)^2  # Sample variance
 ```
 
-####Step 3:  
-From the plot, the big portion of the distribution of sample means is centered around 5 and symmetric to it. However, the tail part is right skewed.
-```{r}
-# Load plotting package and define plot theme
+The comparison between sample distribution and theoretical distribution is provided below. 
+```{r,warning=FALSE,message=FALSE,fig.height=4,fig.width=6}
+# Load plotting package and defining plot theme
 library(ggplot2)
 Plot_theme = theme_bw()+
-      theme(plot.title = element_text(size = 24)
-            ,axis.title.x = element_text(size=18)
-            ,axis.title.y = element_text(size=18)
-            ,axis.text.x = element_text(size=16)
-            ,axis.text.y = element_text(size=16)            
+      theme(plot.title = element_text(size = 12)
+            ,axis.title.x = element_text(size=10)
+            ,axis.title.y = element_text(size=10)
+            ,axis.text.x = element_text(size=8)
+            ,axis.text.y = element_text(size=8)            
       )
 
-# Plot the distribution of sample means
-ggplot(data=Dt)+
-      geom_histogram(aes(Means),fill='grey',binwidth=0.1)+
+x=seq(from=3,to=7,by=0.1)
+DT1=data.frame(x=x,y=dnorm(x,mean=1/rate,sd=1/rate/sqrt(n)))
+
+# Plot the distribution of sample set means
+ggplot(data=Dt,aes(Means))+
+      geom_histogram(aes(y=..density..),fill='grey',binwidth=0.1)+
+      stat_density(col='black',fill=NA,size=1)+
+      geom_line(data=DT1,aes(x,y),col='red',position = "stack",size=1,linetype="dashed")+
+      geom_vline(xintercept=1/rate,col='red',size=1,linetype="dashed")+
+      geom_vline(xintercept=mean(Dt$Means),col='black',size=1)+
       Plot_theme+
-      labs(title="Hitogram of Sample Means")
+      labs(title="Sample Distribution vs. Theoretical Distribution")
 ```
 
+**Step 3**:  
 
-A Quantile-Quantile (QQ) plot is then employed to further test its normality. As the following figure shows, the distribution of sample means overlaps with the normality line around its mean. The tails do not match normality very well due to the small size of the sample set. It could be infered that this match would be improved with the increase of the sample set size (**n**).
+A Quantile-Quantile (QQ) plot is employed to further test its normality. As the following figure shows, the distribution of sample set means overlaps with the normality line around 5 (its mean). The tails do not match normality very well due to the small size of each sample set. 
 
-```{r}
+```{r,fig.height=4,fig.width=6}
  
 # Code copied from qqline() in R to plot the normality line in QQ plot using ggplot2
 gg_qqline<-function(y,probs = c(0.25,0.75)) {
@@ -89,32 +93,19 @@ gg_qqline<-function(y,probs = c(0.25,0.75)) {
 # QQ plot using ggplot2
 ggplot(data=Dt,aes(sample=Means))+
       stat_qq()+
-      gg_qqline(Dt)+
+      gg_qqline(Dt$Means)+
       Plot_theme+
-      labs(title='Normal Probability Plot (n=40)'
+      labs(title='Normal Probability Plot'
            ,x='Theoretical Normal Distribution'
-           ,y='Sample Mean Distribution')
+           ,y='Sample Set Mean Distribution')
 ```
 
-The following plot demonstrate the inference by increasing the sample set size from 40 to 100. The QQ plot matches the normality line much better than the previous one.
+The final analysis is to evaluate the coverage of the confidence interval for
+$1/\lambda = \bar{X} \pm 1.96 \frac{S}{\sqrt{n}}$
 ```{r}
-set.seed(10)      # set seed for generating random numbers
-rate=0.2          # Rate of exponential distribution
-n=100 
-
-# Generate 40 exponentially distributed random numbers for a sample set
-# Calculate the mean of each sample set
-# Replicate this process 1000 times
-Dt=data.frame(Means=replicate(1000,mean(rexp(n,rate))))
-
-# QQ plot using ggplot2
-ggplot(data=Dt,aes(sample=Means))+
-      stat_qq()+
-      gg_qqline(Dt)+
-      Plot_theme+
-      labs(title='Normal Probability Plot (n=100)'
-           ,x='Theoretical Normal Distribution'
-           ,y='Sample Mean Distribution')
+ll <- Dt$Means - qnorm(0.975) * sqrt(1/rate^2/n)
+ul <- Dt$Means + qnorm(0.975) * sqrt(1/rate^2/n)
+CI=mean(ll < 1/rate & ul > 1/rate)
 ```
-
+The confidence interval for the coverage of theoretical mean is **`r CI*100`**%.
 

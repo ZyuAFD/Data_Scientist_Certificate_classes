@@ -5,8 +5,10 @@ output:
     keep_md: yes
   pdf_document: default
 ---
+Reproducible Research: Peer Assessment 1
+========================================================
  Author: Ziwen Yu  
- Date: `r Sys.Date()`  
+ Date: 2015-02-12
  ---
 
 ## Loading and preprocessing the data
@@ -14,15 +16,21 @@ Load packages for data loading and transforming
 ```{r,message=F}
 library(data.table)
 library(lubridate)
+```
+Loading data
+```{r}
 Dt=fread('activity.csv')      # Read Data
 ```
 
 Combine date and time to a new column (datetime)  
-Add column (time) 5 min interval in a day. This is for the convenience in calculating average daily activity pattern. 
+Add column (time) for formated 5 min interval in a day. This is for the convenience in calculating average daily activity pattern. 
 ```{r,results='hide'}
+
 Dt$date=ymd(Dt$date)          # Convert to date type
-Dt[,datetime:=date+hours(interval %/% 100)+minutes(interval %% 100)] # Add time part
-Dt[,time:= ymd(Sys.Date())+hours(interval %/% 100)+minutes(interval %% 100)] 
+# combine date and time part
+Dt[,datetime:=date+hours(interval %/% 100)+minutes(interval %% 100)] 
+# Convert 5 min interval to datetime format
+Dt[,time:= ymd('2015-02-01')+hours(interval %/% 100)+minutes(interval %% 100)]  
 
 ```
 
@@ -36,7 +44,6 @@ names(Daily_step)[2]=c('Num_steps')
 
 Plot a histogram for daily steps summarized in the last step
 ```{r,message=F}
-
 library(ggplot2)
 library(scales)
 Plot_theme = theme_bw()+
@@ -47,10 +54,10 @@ Plot_theme = theme_bw()+
             ,axis.text.y = element_text(size=8)            
       )
 
-ggplot(data=Daily_step)+
-      geom_histogram(aes(Num_steps),fill='grey')+
-      Plot_theme+
-      labs(title='Histogram of Daily Steps',
+ggplot(data=Daily_step)+  
+      geom_histogram(aes(Num_steps),fill='grey')+  
+      Plot_theme+  
+      labs(title='Histogram of Daily Steps',  
            x='Daily Activity')
 
 ```
@@ -70,18 +77,19 @@ Daily_Ptn=Dt[,mean(steps,na.rm=T), by=list(time)]
 names(Daily_Ptn)[2]='Step_mean'
 
 # Plot time series
-ggplot(data=Daily_Ptn)+
-      geom_line(aes(x=time,y=Step_mean,group=1))+
-      scale_x_datetime(labels=date_format(format='%H:%M'))+
-      Plot_theme+
-      labs(title='Average Daily Activity Pattern',
-           x='Time',
+ggplot(data=Daily_Ptn)+  
+      geom_line(aes(x=time,y=Step_mean,group=1))+  
+      scale_x_datetime(labels=date_format(format='%H:%M'))+  
+      Plot_theme+  
+      labs(title='Average Daily Activity Pattern',  
+           x='Time',  
            y='Average Activity')
 ```
 Find the maximum number of steps in the daily step pattern
 ```{r}
 # Time with max step
-format(Daily_Ptn$time[which.max(Daily_Ptn$Step_mean)],format='%H:%M')
+format(Daily_Ptn$time[which.max(Daily_Ptn$Step_mean)],  
+       format='%H:%M')
 ```
 
 
@@ -104,10 +112,12 @@ Plot a new histogram of daily steps with NA records filled
 # summarize daily steps
 Com_Daily_step=Dt1[,sum(Complete_Step),by=list(date)]
 names(Com_Daily_step)[2]='Num_steps'
-ggplot(data=Com_Daily_step)+
-      geom_histogram(aes(Num_steps),fill='grey')+
-      Plot_theme+
-      labs(title='Histogram of Daily activity after NA Filled',
+
+# Plot histogram
+ggplot(data=Com_Daily_step)+  
+      geom_histogram(aes(Num_steps),fill='grey')+  
+      Plot_theme+  
+      labs(title='Histogram of Daily activity after NA Filled',  
            x='Daily Activity')
 ```
 
@@ -129,6 +139,8 @@ Plot the step time series of 5 min interval in a day with panel on "weekday" and
 ```{r,warning=FALSE}
 Daily_Ptn_wd=Dt1[,mean(Complete_Step), by=list(Wday,time)]
 names(Daily_Ptn_wd)[3]='Step_mean'
+
+# Plot activity pattern time series on panel of weekday and weekend
 ggplot(data=Daily_Ptn_wd)+
       geom_line(aes(x=time,y=Step_mean,group=1))+
       scale_x_datetime(labels=date_format(format='%H:%M'))+
@@ -139,7 +151,7 @@ ggplot(data=Daily_Ptn_wd)+
            y='Average Activity')
 ```
 
-
+The pattern of average daily activity patterns ware different between weekday and weekend. In weekdays, from 6:00 to 8:35 is a peak period when people wake up and go to work. However, in weekend, this peak period is disolved in the whole day time which makes its pattern much smoother than the weekday's.
 
 
 

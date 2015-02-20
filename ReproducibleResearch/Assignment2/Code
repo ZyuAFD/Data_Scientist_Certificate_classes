@@ -1,0 +1,8 @@
+setwd('E:\\Classes\\Data Scientist Certificate\\Reproducible Research\\Project\\Project 2\\')
+
+library(data.table)
+Storm=read.csv('repdata-data-StormData.csv',sep=',')
+
+x <- which(colnames(Storm) %in% c('STATE__',"BGN_DATE",'BGN_TIME','TIME_ZONE','END_DATE','END_TIME',
+                                  "PROPDMG", "CROPDMG", "EVTYPE", "INJURIES", "FATALITIES"))
+Storm1 <- Storm[, x]

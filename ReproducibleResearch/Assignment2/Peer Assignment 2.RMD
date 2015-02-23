@@ -2,7 +2,7 @@
 title: "Peer Assignment 2"
 author: "Ziwen Yu"
 date: "Saturday, February 21, 2015"
-output: html_document
+output: pdf_document
 ---
 ## Analysis of severe weather events' impact on public health and economy in the United States using NOAA storm database
 
@@ -32,7 +32,7 @@ Plot_theme = theme_bw()+
 ####- Step 1: Download and decompress file 
 
 ```{r}
-setwd('C:\\Users\\Ziwen.Yu\\Documents\\Class\\Reproducible research\\Assignment 2\\')
+setwd('E:\\Classes\\Data Scientist Certificate\\Reproducible Research\\Project\\Project 2\\')
 if (!file.exists("repdata-data-StormData.csv.bz2")) 
       download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", 
                   destfile = "repdata-data-StormData.csv.bz2")
@@ -43,7 +43,7 @@ if (!file.exists("repdata-data-StormData.csv"))
 ####- Step 2: Read file and choose the necessary fields for further analysis
 ```{r,message=FALSE,results='hold'}
 # Read data from csv file and choose the necessary fields for further analysis
-setwd('C:\\Users\\Ziwen.Yu\\Documents\\Class\\Reproducible research\\Assignment 2\\')
+setwd('E:\\Classes\\Data Scientist Certificate\\Reproducible Research\\Project\\Project 2\\')
 if (!"Storm" %in% ls()) Storm=read.csv('repdata-data-StormData.csv',sep=',',stringsAsFactors=F)
 dim(Storm)
 ```

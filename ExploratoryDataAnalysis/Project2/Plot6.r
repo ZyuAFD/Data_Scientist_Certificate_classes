@@ -16,9 +16,11 @@ Plot_theme = theme_bw() + theme(plot.title = element_text(size = 12), axis.title
                                 axis.title.y = element_text(size = 10), axis.text.x = element_text(size = 8), 
                                 axis.text.y = element_text(size = 8))
 
+png('plot6.png')
 ggplot(data=VehNEI)+
   geom_bar(aes(factor(year),Emissions),stat='identity')+
   facet_grid(.~city)+
   labs(x="year", y=expression(paste("Total",PM[2.5]," Emission (Tons)"))) + 
-  labs(title=expression("Motor Vehicle Source PM"[2.5]*" Emissions Comparison between Baltimore and Los Angeles County from 1999-2008"))+
+  labs(title=expression("Motor Vehicle Source Emissions Comparison between \n Baltimore and Los Angeles County from 1999-2008"))+
   Plot_theme 
+dev.off()

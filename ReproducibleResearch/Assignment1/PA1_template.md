@@ -8,7 +8,7 @@ output:
 Reproducible Research: Peer Assessment 1
 ========================================================
  Author: Ziwen Yu  
- Date: 2015-02-12
+ Date: 2015-03-12
  ---
 
 ## Loading and preprocessing the data

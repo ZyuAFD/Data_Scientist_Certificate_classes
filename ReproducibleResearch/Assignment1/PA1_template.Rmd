@@ -8,11 +8,8 @@ output:
 Reproducible Research: Peer Assessment 1
 ========================================================
  Author: Ziwen Yu  
-<<<<<<< HEAD
  Date: 2015-03-15
-=======
- Date: 2015-03-12
->>>>>>> origin/master
+
  ---
 
 ## Loading and preprocessing the data

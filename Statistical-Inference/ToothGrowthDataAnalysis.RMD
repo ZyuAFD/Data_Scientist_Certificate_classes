@@ -1,0 +1,74 @@
+---
+title: "Analyze ToothGrowth Data"
+author: "Ziwen Yu"
+output: pdf_document
+---
+
+This report shows the analysis of the tooth growth in **ToothGrowth** data corresponding to the predictors of supp and dose.
+
+##1.Load the ToothGrowth data and perform some basic exploratory data analyses 
+```{r,results='hide',warning=FALSE}
+library(datasets)
+library(data.table)
+data(ToothGrowth)
+TestData=data.table(ToothGrowth)
+TestData[,Group:=paste(supp,dose)] #produce group for boxplot
+
+```
+###Exploratory data analyses: 
+Plotting tooth length vs. dose between two supplementaries.
+Looking at the plot, the tooth grows faster by using orange than Vitamin C under dose of 0.2 mg 
+```{r,results='hold',warning=FALSE}
+# Plotting --------------------------------------------------------
+library(ggplot2)
+library(scales)
+
+Plot_Theme=   theme_bw()+
+              theme(plot.title = element_text(size = 24)
+                    ,axis.title.x = element_text(size=18)
+                    ,axis.title.y = element_text(size=18)
+                    ,axis.text.x = element_text(size=16)
+                    ,axis.text.y = element_text(size=16)
+                    )
+
+ggplot(TestData,aes(x=dose,y=len,color=supp,))+
+      geom_boxplot(aes(group=Group,fill=supp),alpha=0.2,color=1,outlier.shape = NA)+
+      geom_jitter()+
+      stat_smooth(method='lm',se=FALSE)+
+      xlab('Dose (mg)')+
+      ylab('Tooth Length')+      
+      Plot_Theme
+```
+##2.Basic Summary of data
+```{r}
+summary(ToothGrowth)      
+             
+```
+
+##3.Use confidence intervals to compare tooth growth by supp and dose
+Since there is no sufficient information indicating the relatoinship of tow sample groups. Unpaired test is assumed. In the following analysis, comparison of tooth length by different supplementaries in different doses.
+
+```{r,results='hold'}
+test_0.5=t.test(TestData$len[TestData$supp=='OJ' & TestData$dose==0.5]
+       ,TestData$len[TestData$supp=='VC' & TestData$dose==0.5]
+       ,paired=FALSE
+       ,var.equal=FALSE)
+test_1=t.test(TestData$len[TestData$supp=='OJ' & TestData$dose==1]
+       ,TestData$len[TestData$supp=='VC' & TestData$dose==1]
+       ,paired=FALSE
+       ,var.equal=FALSE)
+test_2=t.test(TestData$len[TestData$supp=='OJ' & TestData$dose==2]
+       ,TestData$len[TestData$supp=='VC' & TestData$dose==2]
+       ,paired=FALSE
+       ,var.equal=FALSE)
+
+test_0.5$conf.int
+test_1$conf.int
+test_2$conf.int
+```
+Based on the results from the t tests, confidence intervals do not cover **ZERO** under the doses of 0.5 mg and 1 mg. This indicates that the tooth growth under orange juice usage is statiscially greater than using Vitamin C. However, when dose increases to 2 mg, **ZERO** is within the confidentce interval from the test, which implies that the tooth growth under this dose does not have any difference between two supplementaries that is statistically significant.
+
+##4.Summary  
+* The analysis is built on the assumption that there are no relationship between two sample groups so that the test is performed as ***unpaired*** and ***unequal variance***.  
+
+* Based on the analysis above, orange juice has a better effect in improving the tooth growth than Vitamin C under the dose of 0.5 mg and 1 mg. This difference is not statistically significant when the dose increases to 2 mg.

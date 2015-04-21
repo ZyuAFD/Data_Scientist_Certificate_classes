@@ -1,0 +1,51 @@
+---
+title: "Regression Model Project"
+author: "Ziwen Yu"
+date: "Monday, April 20, 2015"
+output: pdf_document
+---
+
+## Executive Summary
+
+```{r Environment,message=FALSE}
+libs=c('ggplot2','scales')
+lapply(libs,library, character.only=T)
+# Plot style
+Plot_theme = theme_bw()+
+      theme(plot.title = element_text(size = 12)
+            ,axis.title.x = element_text(size=10)
+            ,axis.title.y = element_text(size=10)
+            ,axis.text.x = element_text(size=8,angle = 45, hjust = 1)
+            ,axis.text.y = element_text(size=8)            
+      )
+# Load Data
+data(mtcars)
+```
+
+## Exploratory Analysis
+```{r MPG Distribution by Transimission}
+ggplot(data=mtcars)+
+  geom_boxplot(aes(factor(am),mpg))+
+  labs(x='Transmission (0: Automatic, 1: Manual)')+
+  Plot_theme
+```
+
+MPG distribution of two transmissions
+
+## Statistical Inference
+T test of mean MPGs between automatic and mannual transmission
+
+## Regression models
+### all variables
+
+### selected variables
+
+### correlated variables
+
+### easiest model
+
+### residual analysis
+
+## Conclusion
+
+## Appendix

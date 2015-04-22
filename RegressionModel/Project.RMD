@@ -1,13 +1,13 @@
 ---
 title: "Regression Model Project"
 author: "Ziwen Yu"
-date: "Monday, April 20, 2015"
 output: pdf_document
 ---
 
 ## Executive Summary
+This report is to build a regression model to test the relationship between car mpg (mile per gallon) and transimisison type. The exploratory analysis and test of mpg distribution difference by transmission type is provided first. Linear regression model is then built between mpg and transimission type. Further anlaysis is performed to exam if other variables should be included in the model to get a good fit of the observation. Plots are all placed in the appendix.
 
-```{r Environment,message=FALSE}
+```{r Environment,message=FALSE,message=FALSE}
 libs=c('ggplot2','scales')
 lapply(libs,library, character.only=T)
 # Plot style
@@ -27,24 +27,14 @@ mtcars$gear <- factor(mtcars$gear)
 mtcars$carb <- factor(mtcars$carb)
 ```
 
-## Exploratory Analysis
-```{r MPG Distribution by Transimission}
-ggplot(data=mtcars)+
-  geom_boxplot(aes(factor(am),mpg))+
-  labs(x='Transmission (0: Automatic, 1: Manual)')+
-  Plot_theme
-```
-
-MPG distribution of two transmissions
-
-## Statistical Inference
-T test of mean MPGs between automatic and manual transmission
-null hypothesis: mean MPGs of automatic and manual transmissions are equal.
+## Exploratory Analysis and Comparison of MPG distribution Means
+The mpg distributions of different transmission types are shown in **Figure 1** in appendix. Given limited sample size, t test is used to compare the means of mpg distributions by transmission types. Null hypothesis for this test (in the following code chunk) is that mean MPGs of automatic and manual transmissions are equal.
 ```{r T test for mean MPGs}
 MPGmuTest=with(mtcars,t.test(mpg~am))
-MPGmuTest$p.value
+MPGmuTest$p.value   #P value of test
+MPGmuTest$estimate  #MPG means of different transmission type
 ```
-
+The P value of the test is `r round(MPGmuTest$p.value,4)` which indicates a statistically significant difference between MPG means of automatic and manual transmissions. Cars with automatic transmission have a mean MPG of `r round(MPGmuTest$estimate[1],2)` which is lower than manual transmission cars' mean MPG of `r round(MPGmuTest$estimate[2],2)`.
 
 
 ## Regression models
@@ -52,9 +42,9 @@ MPGmuTest$p.value
 null hypothesis: all coeffificent equal 0.
 ```{r full model}
 fullmodel=lm(mpg~.,data=mtcars)
-summary(fullmodel)
+with(summary(fullmodel),pf(fstatistic[1], fstatistic[2], fstatistic[3], lower.tail=F)) #Get P value from F distribution value
 ```
-P value is 0.000124, much less than alpha=0.5. null hypothesis is rejected. 
+P value is  `r with(summary(fullmodel),pf(fstatistic[1], fstatistic[2], fstatistic[3], lower.tail=F))`, much less than alpha=0.5. null hypothesis is rejected. 
 
 ### selected variables
 ```{r AIC selection}
@@ -86,4 +76,11 @@ plot(intactmodel)
 
 ## Conclusion
 
-## Appendix
+## Appendix  
+#### Figure 1: mpg distribution by transmission type
+```{r MPG Distribution by Transimission}
+ggplot(data=mtcars)+
+  geom_boxplot(aes(factor(am),mpg))+
+  labs(x='Transmission (0: Automatic, 1: Manual)')+
+  Plot_theme
+```

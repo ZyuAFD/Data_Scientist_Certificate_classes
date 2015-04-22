@@ -20,6 +20,11 @@ Plot_theme = theme_bw()+
       )
 # Load Data
 data(mtcars)
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- factor(mtcars$am)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
 ```
 
 ## Exploratory Analysis
@@ -33,18 +38,51 @@ ggplot(data=mtcars)+
 MPG distribution of two transmissions
 
 ## Statistical Inference
-T test of mean MPGs between automatic and mannual transmission
+T test of mean MPGs between automatic and manual transmission
+null hypothesis: mean MPGs of automatic and manual transmissions are equal.
+```{r T test for mean MPGs}
+MPGmuTest=with(mtcars,t.test(mpg~am))
+MPGmuTest$p.value
+```
+
+
 
 ## Regression models
 ### all variables
+null hypothesis: all coeffificent equal 0.
+```{r full model}
+fullmodel=lm(mpg~.,data=mtcars)
+summary(fullmodel)
+```
+P value is 0.000124, much less than alpha=0.5. null hypothesis is rejected. 
 
 ### selected variables
+```{r AIC selection}
+sltVarmodel=step(fullmodel)
+```
+Only cyl, hp, wt and am variable are picked based on AIC value.
 
 ### correlated variables
+```{r pair plot for selected variable}
+pairs(mtcars[,c('cyl','hp','wt','am')],panel=panel.smooth,main='Pair Graph of Selected Model Variables')
+```
+may have interaction between wt and hp. Add interactive variable wt*hp into model
+```{r interaction variable model}
+intactmodel=lm(mpg~cyl + hp + wt + am+wt*hp,data=mtcars)
+```
 
 ### easiest model
+null hypothesis: the coefficient of interactive variable wt*qsec equals 0
+```{r anova to estimate the interactive variable}
+anova(sltVarmodel,intactmodel)
+```
+P value is 0.035 which is significant to reject the null hypothesis on 5% level . The interactive variable should be inclued in the regression model.
 
 ### residual analysis
+```{r residual plot}
+par(mfrow = c(2, 2))
+plot(intactmodel)
+```
 
 ## Conclusion
 

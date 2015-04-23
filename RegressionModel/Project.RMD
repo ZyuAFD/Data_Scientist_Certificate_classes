@@ -5,19 +5,10 @@ output: pdf_document
 ---
 
 ## Executive Summary
-This report is to build a regression model to test the relationship between car mpg (mile per gallon) and transimisison type. The exploratory analysis and test of mpg distribution difference by transmission type is provided first. Linear regression model is then built between mpg and transimission type. Further anlaysis is performed to exam if other variables should be included in the model to get a good fit of the observation. Plots are all placed in the appendix.
+This report is to build a regression model to quantify the relationship between car mpg (mile per gallon) and transimisison type. The exploratory analysis and test of mpg distribution difference by transmission type is provided first. Linear regression models is then built between mpg and transimission type by including different variables. An anova test is used to select the best model. The residual diagnostics and linear regression assumptions are tested in the end. 
+Plots are all placed in the appendix.
 
-```{r Environment,message=FALSE,message=FALSE}
-libs=c('ggplot2','scales')
-lapply(libs,library, character.only=T)
-# Plot style
-Plot_theme = theme_bw()+
-      theme(plot.title = element_text(size = 12)
-            ,axis.title.x = element_text(size=10)
-            ,axis.title.y = element_text(size=10)
-            ,axis.text.x = element_text(size=8,angle = 45, hjust = 1)
-            ,axis.text.y = element_text(size=8)            
-      )
+```{r Load and tranform data,results='hide'}
 # Load Data
 data(mtcars)
 mtcars$cyl <- as.factor(mtcars$cyl)
@@ -27,60 +18,97 @@ mtcars$gear <- factor(mtcars$gear)
 mtcars$carb <- factor(mtcars$carb)
 ```
 
-## Exploratory Analysis and Comparison of MPG distribution Means
-The mpg distributions of different transmission types are shown in **Figure 1** in appendix. Given limited sample size, t test is used to compare the means of mpg distributions by transmission types. Null hypothesis for this test (in the following code chunk) is that mean MPGs of automatic and manual transmissions are equal.
-```{r T test for mean MPGs}
+## Exploratory Analysis and Comparison of mpg Distribution Means
+The mpg distributions of different transmission types are shown in **Figure 1** in appendix. Given limited sample size, t test is used to compare the means of mpg distributions by transmission types. Null hypothesis for this test (in the following code chunk) is that the mean mpgs of automatic and manual transmissions are equal.
+```{r T test for mean MPGs,results='hold'}
 MPGmuTest=with(mtcars,t.test(mpg~am))
 MPGmuTest$p.value   #P value of test
 MPGmuTest$estimate  #MPG means of different transmission type
 ```
-The P value of the test is `r round(MPGmuTest$p.value,4)` which indicates a statistically significant difference between MPG means of automatic and manual transmissions. Cars with automatic transmission have a mean MPG of `r round(MPGmuTest$estimate[1],2)` which is lower than manual transmission cars' mean MPG of `r round(MPGmuTest$estimate[2],2)`.
+The P value of the test is `r round(MPGmuTest$p.value,4)` which indicates a statistically significant difference between mpg means of automatic and manual transmissions. Automatic transmission cars have a mean mpg of `r round(MPGmuTest$estimate[1],2)`, lower than `r round(MPGmuTest$estimate[2],2)` of the manual transmission cars.
 
 
 ## Regression models
-### all variables
-null hypothesis: all coeffificent equal 0.
-```{r full model}
-fullmodel=lm(mpg~.,data=mtcars)
-with(summary(fullmodel),pf(fstatistic[1], fstatistic[2], fstatistic[3], lower.tail=F)) #Get P value from F distribution value
-```
-P value is  `r with(summary(fullmodel),pf(fstatistic[1], fstatistic[2], fstatistic[3], lower.tail=F))`, much less than alpha=0.5. null hypothesis is rejected. 
 
-### selected variables
-```{r AIC selection}
+#### Simple model  
+Given the t test results, it could be assumed that the mpg is a dependent of car transmission type. So a linear model $mpg = \beta0 + \beta1*am$ could be built between mpg and car transmission type and tested on a null hypothesis of $\beta0=\beta1=0$.
+```{r Simple model}
+simmodel=lm(mpg~am,data=mtcars)
+with(summary(simmodel),
+     pf(fstatistic[1], 
+        fstatistic[2], 
+        fstatistic[3], 
+        lower.tail=F)) # P value of the model
+```
+The P values of the model, 0.00029, is less than the 5% level of significance. Therefore, car transmission type is related with mpg. The null hypothesis is rejected.
+
+#### Variable selection model
+Additional to am (transmission type), other variables may also have impact on the mpg. So a full regression model is built on all variables. Then, a variable selection is conducted based on Akaike information criterion (AIC).
+```{r full model and AIC selection,results='hide'}
+fullmodel=lm(mpg~.,data=mtcars)
 sltVarmodel=step(fullmodel)
 ```
-Only cyl, hp, wt and am variable are picked based on AIC value.
+Only cyl (Number of cylinders), hp (Gross horsepower), wt (Weight (lb/1000)) and am (Transmission) are picked to model mpg based on AIC value.
 
-### correlated variables
-```{r pair plot for selected variable}
-pairs(mtcars[,c('cyl','hp','wt','am')],panel=panel.smooth,main='Pair Graph of Selected Model Variables')
-```
-may have interaction between wt and hp. Add interactive variable wt*hp into model
-```{r interaction variable model}
-intactmodel=lm(mpg~cyl + hp + wt + am+wt*hp,data=mtcars)
+#### Interactive variable model
+The current models are all based on the assumption that the variables are statistically independent. But a paired graph plotted in **Figure 2** in appendix implies that there may have some interactions between hp (Gross horsepower) and wt (Weight (lb/1000)). Thus, we build a new model by including the interactive varaible between hp and wt.  
+
+```{r interaction variable model and model comparison}
+intactmodel=lm(mpg~cyl + hp + wt + am + wt*hp, data=mtcars)
 ```
 
-### easiest model
-null hypothesis: the coefficient of interactive variable wt*qsec equals 0
-```{r anova to estimate the interactive variable}
-anova(sltVarmodel,intactmodel)
+#### Model comparison
+After involving more variables into our model, an anova test is used to test the null hypothesis that the coefficient of the additional variables are all 0.
+```{r results='hide'}
+anova(simmodel      # Model 1
+      ,sltVarmodel  # Model 2
+      ,intactmodel  # Model 3
+      )
 ```
-P value is 0.035 which is significant to reject the null hypothesis on 5% level . The interactive variable should be inclued in the regression model.
+P values of the test are 5.97e-09 and 0.035 for model 2 and model 3 respectively. Both are significant to reject the null hypothesis on the significant level of 5%. Therefore, the relationship between mpg and transmission type could be quantified by the third model with the interactive variable ($mpg=46.8-1.2818*cyl6-1.3942*cyl8-0.1021*hp-7.1224*wt+0.1898*am1+0.233*hp*wt$). 
 
-### residual analysis
-```{r residual plot}
-par(mfrow = c(2, 2))
-plot(intactmodel)
+### Residual analysis
+The residual analysis of the selected model is plotted in **Figure 3** in appendix. Both residual and square root of standardized residual show no obvious relationship with fitted values. Standardized residuals are very close to normal distribution. The Cook's distances are all < 0.5 for all different leverage levels which indicates there is no outlier. 
+
+The variable coefficients are not greatly effect by deleting any one of the observations based on the result of DFBETAS checked below.
+```{r Deletion diagnostics}
+which(abs(dfbetas(intactmodel))>=1)
 ```
 
-## Conclusion
+Therefore, all the assumptions for the selected model hold in this analysis.
 
 ## Appendix  
-#### Figure 1: mpg distribution by transmission type
-```{r MPG Distribution by Transimission}
+
+```{r message=FALSE}
+libs=c('ggplot2','scales')
+lapply(libs,library, character.only=T)
+# Plot style
+Plot_theme = theme_bw()+
+      theme(plot.title = element_text(size = 12)
+            ,axis.title.x = element_text(size=10)
+            ,axis.title.y = element_text(size=10)
+            ,axis.text.x = element_text(size=8, hjust = 1)
+            ,axis.text.y = element_text(size=8)            
+      )
+```
+
+Figure 1: mpg distribution by transmission type 
+```{r MPG Distribution by Transimission,fig.height=3,fig.width=5,results='hold'}
 ggplot(data=mtcars)+
   geom_boxplot(aes(factor(am),mpg))+
   labs(x='Transmission (0: Automatic, 1: Manual)')+
   Plot_theme
 ```
+
+Figure 2: pair plot for selected variables
+```{r pair plot for selected variable,fig.height=4,fig.width=5}
+pairs(mtcars[,c('cyl','hp','wt','am')],
+      panel=panel.smooth)
+```
+
+Figure 3: regression model plot
+```{r residual plot,fig.height=4,fig.width=5}
+par(mfrow = c(2, 2))
+plot(intactmodel)
+```
+

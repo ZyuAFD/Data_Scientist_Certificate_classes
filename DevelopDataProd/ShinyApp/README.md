@@ -17,4 +17,4 @@ The `igraph` package is loaded for network analysis. User defined network is fir
 A customized function `layout.modular` is defined to produce a clear plot with communities. 
 
 #### Output
-The communities detected by fast greedy algorithm is then displayed in the main panel. This result is instantly updated with the input from `SliderInput`.
+The communities detected by fast greedy algorithm is then colored and displayed in the main panel. Nodes are sized based on their number of links in the network. This result is instantly updated with the input from `SliderInput`.

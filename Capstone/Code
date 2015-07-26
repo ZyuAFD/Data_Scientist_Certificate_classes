@@ -1,0 +1,16 @@
+setwd('E:\\Study\\Classes\\Data Scientist Certificate\\capstone\\data\\final\\en_US\\')
+
+Tw=readLines('en_US.twitter.txt')
+Nw=readLines('en_US.news.txt')
+bg=readLines('en_US.blogs.txt')
+
+max(nchar(Tw))
+max(nchar(Nw))
+max(nchar(bg))
+
+
+sum(grepl("love",Tw))/sum(grepl("hate",Tw))
+
+
+
+Tw[which(grepl("A computer once beat me at chess, but it was no match for me at kickboxing",Tw))]

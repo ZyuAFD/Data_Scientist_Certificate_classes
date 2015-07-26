@@ -1,0 +1,163 @@
+---
+title: "Capstone Milestone Report"
+author: "Ziwen Yu"
+date: "July 26, 2015"
+output: html_document
+---
+
+This report explains the exploratory analysis and goals for the eventual Shiny app and algorithm. This document concise and explain only the major features of the data identified and briefly summarize the plans for creating the prediction algorithm and Shiny app in a way that would be understandable to a non-data scientist manager. 
+
+The motivation for this project is to: 
+
+### Demonstrate that you've downloaded the data and have successfully loaded it in.
+
+```{r data load and basic statistics,message=FALSE,warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(tm)
+library(stringi)
+library(SnowballC)
+library(RWeka)
+library(knitr)
+
+setwd('C:\\Users\\Ziwen.Yu\\Documents\\Class\\Capstone\\Data\\final\\en_US\\')
+
+Tw=readLines('en_US.twitter.txt', skipNul=TRUE)
+Nw=readLines('en_US.news.txt', skipNul=TRUE)
+Bg=readLines('en_US.blogs.txt', skipNul=TRUE)
+
+```
+
+There is a warning of incompleted final line found on file en_US.news.txt, which is not able to be solved so far.
+
+### Create a basic report of summary statistics about the data sets.
+
+```{r kable,echo=FALSE}
+#Function to estimate the basic statistics
+Summary.basic=function(FNM,x)
+{
+      File=FNM
+      Lines=length(x)
+      TotalChar=sum(nchar(x))
+      Word_Count=sum(stri_count_words(x))
+      LongestLine=max(nchar(x))
+      return(data.frame(File=File
+                        ,Lines=Lines
+                        ,TotalChar=TotalChar
+                        ,Word_Count=Word_Count
+                        ,LongestLine=LongestLine))
+}
+
+kable(rbind(Summary.basic('en_US.news.txt',Nw),
+            Summary.basic('en_US.twitter.txt',Tw),
+            Summary.basic('en_US.blogs.txt',Bg))
+      )
+```
+
+### Data cleaning
+Sampling 5% of the text lines as the training set from three files. Transform the content into corpus before doing the following cleaning steps
+
+
+
+* Remove all non-ASCii Characters
+* Remove certain characters in the text :
+> [\\.|(){}^$*+?,:;-]
+
+* Transform all characters in the text to lower case
+* Remove all numbers (digits)
+* Remove punctuation
+* Remove all English language stopwords from a standardized list of stopwords
+* Remove extraneous white space characters
+* Removes common word endings for English words such as “es”, “ed”, “s” (e.g. Stemming)
+
+
+```{r Data cleaning}
+DataLines=c(Bg,Nw,Tw)
+set.seed(334)
+Fraction=0.05 # Fraction of training set 
+TrainingSet=sample(1:length(DataLines),
+                   size=ceiling(length(DataLines)*Fraction),
+                   replace=F) #sampling training set line indexes
+
+# writeLines(DataLines[TrainingSet], con = "./train.txt")
+# writeLines(DataLines[-TrainingSet], con = "./test.txt")
+
+TrainingData=DataLines[TrainingSet]
+
+rm(Bg,Nw,Tw,DataLines,TrainingSet)#Clear workspace
+
+
+Doc.corpus <- Corpus(VectorSource(TrainingData), readerControl = list(language = "en"))
+
+Doc.corpus=tm_map(Doc.corpus,content_transformer(function(x) iconv(x, "latin1", "ASCII", sub="")))
+
+
+# Remove certain characters
+SpaceSub = content_transformer(function(x, pattern) gsub(pattern, " ", x))
+Doc.corpus = tm_map(Doc.corpus, SpaceSub, "[\\.|(){}^$*+?,:;-]")
+
+# Transform all characters in the text to lower case
+Doc.corpus <- tm_map(Doc.corpus, tolower)
+
+# Remove all numbers (digits)
+Doc.corpus <- tm_map(Doc.corpus, removeNumbers)
+
+# Remove punctuation
+Doc.corpus <- tm_map(Doc.corpus, removePunctuation)
+
+# Remove all English language stopwords from a standardized list of stopwords
+Doc.corpus <- tm_map(Doc.corpus, removeWords, stopwords('english'))
+
+# Remove extraneous white space characters
+Doc.corpus <- tm_map(Doc.corpus, stripWhitespace)
+
+# Steming 
+Doc.corpus <- tm_map(Doc.corpus, stemDocument)
+
+
+Doc.corpus <- tm_map(Doc.corpus, PlainTextDocument)
+```
+
+```{r echo=FALSE}
+kable(rbind(Summary.basic('Transformed Data',unlist(sapply(Doc.corpus, `[`, "content"))),
+             Summary.basic('Raw',TrainingData)))
+```
+
+### Report any interesting findings that you amassed so far.
+Analyze the Ngram (1~3) in the data and display the frequency.
+
+```{r Exp anlaysis}
+
+# Unigram tokenizer
+UnigramTokenizer <- function(x){
+        NGramTokenizer(x, Weka_control( min = 1, max = 1))
+}
+
+# Bigram tokenizer
+BigramTokenizer <- function(x){
+        NGramTokenizer(x, Weka_control( min = 2, max = 2))
+}
+
+# trigram tokenizer 
+TrigramTokenizer <- function(x){
+        NGramTokenizer(x, Weka_control( min = 3, max = 3))
+}
+
+unigrams <- DocumentTermMatrix(Doc.corpus, 
+                               control = list(tokenize = UnigramTokenizer, 
+                                              removeNumbers=TRUE)
+                               ) 
+bigrams <- DocumentTermMatrix(Doc.corpus, 
+                              control = list(tokenize = BigramTokenizer, 
+                                             removeNumbers=TRUE)
+                              )
+trigrams <- DocumentTermMatrix(Doc.corpus, 
+                               control = list(tokenize = TrigramTokenizer, 
+                                              removeNumbers=TRUE)
+                               )
+```
+
+
+### Get feedback on your plans for creating a prediction algorithm and Shiny app. 
+The model will use a proper backoff model from 4grams -> 3grams -> 2grams. The candidate algorithms would be stupid back-off, Katz back-off.

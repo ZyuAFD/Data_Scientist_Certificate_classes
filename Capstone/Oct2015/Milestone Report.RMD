@@ -1,0 +1,222 @@
+---
+title: "Data Scientist Capstone Project Milestone Report"
+author: "Ziwen Yu"
+output: html_document
+---
+
+This is the milstone report of the data scientist capstone project on "Yelp Dataset Challenge". In this report, the data will be loaded and explored to get a brief understading of the information. The goal of this analysis is to come out a question that is of interest for some audience and answerable from the data. 
+
+## Loading the data
+
+```{r Load Data,eval=FALSE}
+
+download.file("https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/yelp_dataset_challenge_academic_dataset.zip",
+              'yelp_dataset_challenge_academic_dataset.zip')
+unzip('yelp_dataset_challenge_academic_dataset.zip',
+      junkpaths=F)
+
+library(rjson)
+library(dplyr)
+library(knitr)
+
+# Function to read JSON file
+ReadJSON_File = function (fileNM){
+      fileNM %>%
+            readLines %>%
+            lapply(.,fromJSON)
+}
+
+business    <- ReadJSON_File('yelp_academic_dataset_business.json')
+review      <- ReadJSON_File('yelp_academic_dataset_review.json')
+user        <- ReadJSON_File('yelp_academic_dataset_user.json')
+checkin     <- ReadJSON_File('yelp_academic_dataset_checkin.json')
+tip         <- ReadJSON_File('yelp_academic_dataset_tip.json')
+```
+
+```{r Read data from saved files,echo=FALSE,message=FALSE}
+library(dplyr)
+library(knitr)
+
+setwd('C:\\Users\\Ziwen.Yu\\Documents\\Class\\Capstone\\Data\\Oct 2015\\')
+
+path='Saved Data\\'
+business    =readRDS(paste0(path,"business.rds"))
+review      =readRDS(paste0(path,"review.rds"))
+user        =readRDS(paste0(path,"user.rds"))
+checkin     =readRDS(paste0(path,"checkin.rds"))
+tip         =readRDS(paste0(path,"tip.rds"))
+Health      =readRDS(paste0(path,"Health.rds"))
+Sub_cate    =readRDS(paste0(path,"Sub_cate.rds"))
+Doc_reviews =readRDS(paste0(path,"Doc_reviews.RDS"))
+
+Obs=c('business',
+      'review',
+      'user',
+      'checkin',
+      'tip',
+      'Health')
+
+kable(
+
+      cbind(
+      sapply(Obs,function(x) format(object.size(get(x)),units='MB')),
+      sapply(Obs,function(x) length(get(x)))
+      ) %>%
+            data.frame() %>%
+            rename(Size=X1,Length=X2)
+      )
+
+```
+
+## Explore all the business
+
+The question of interest to me is how to detect the business category by analyzing the review content.   __First__ thing to check here is the main business categories in the business data. 
+
+```{r Category Histogram,message=FALSE,error=FALSE}
+
+library(ggplot2)
+Plot_theme = theme_bw()+
+      theme(plot.title = element_text(size = 12)
+            ,axis.title.x = element_text(size=10)
+            ,axis.title.y = element_text(size=10)
+            ,axis.text.x = element_text(size=10,angle = 45, hjust = 1)
+            ,axis.text.y = element_text(size=10)            
+      )
+
+category=sapply(business,function(x) x$categories)
+category %>%
+      unlist() %>%
+      data.frame(Categories=.) %>%
+      group_by(Categories) %>%
+      tally() %>%
+      rename(Freq=n) %>%
+      top_n(.,20,Freq) %>%
+      ggplot(.,aes(reorder(Categories, -Freq), Freq))+
+      geom_bar(stat="identity")+
+      xlab('')+
+      ggtitle('Top 20 Business Categories')+
+      Plot_theme
+
+```
+
+__Secondly__, I would focus on the "Health & Medical" category business which is related to my work. The subcategories in "Health & Medical" business are further explored.
+```{r SubCategory in Health & medical}
+findbusiness_by_Category = function (Category){
+      x=sapply(business,function(x) Category %in% x$categories)
+      business[x]
+}
+
+Category_of_interest='Health & Medical'
+Health=findbusiness_by_Category(Category_of_interest)
+
+category=sapply(Health,function(x) x$categories)
+category %>%
+      unlist() %>%
+      data.frame(Categories=.) %>%
+      filter(Categories!=Category_of_interest) %>%      
+      group_by(Categories) %>%
+      tally() %>%
+      rename(Freq=n) %>%
+      top_n(.,40,Freq) %>%
+      ggplot(.,aes(reorder(Categories, -Freq), Freq))+
+      geom_bar(stat="identity")+
+      xlab('')+
+      ggtitle('Top 20 Sub-Categories in Health & Medical Business')+
+      Plot_theme
+
+```
+
+## Target Problem 
+
+We can see that "Doctors" is the biggest sub-category in the "Health & Medical" business. Many of the top 20 categories are actually more granular under "Doctors" category, such as "Optometrists", "Family Practice" and "Pediatricians", etc. However, there are still `r sum(sapply(Health,function(x) ('Health & Medical' %in% x$categories) & ('Doctors' %in% x$categories) & length(x$categories)==2))` businesses tagged as "Doctors" with no specialty information.
+
+This could be a problem for those who are looking for a doctors in a specialized field. The target problem of this project is __to build a model that could automatically categorize the specialty of a "Doctors" business based on the existing review information using text mining__. 
+
+## Further Exploratory Analysis
+
+1. Make sure all "Doctors" businesses are under "Health & Medical" category
+```{r Check Doctors under Health & Medical}
+Category_of_interest='Doctors'
+Doctor=findbusiness_by_Category(Category_of_interest)
+
+Doctor %>%
+      sapply(.,function(x) x$categories) %>%
+      unlist() %>%
+      data.frame(Categories=.) %>%
+      filter (Categories %in% c('Doctors','Health & Medical')) %>%
+      group_by(Categories) %>%
+      tally() %>%
+      rename(Freq=n) %>%
+      kable
+```
+
+
+2. Check the frequency of all sub-categories under "Doctors"
+```{r Histogram of sub-categories under Doctors}
+
+Doctor %>%
+      sapply(.,function(x) x$categories) %>%
+      unlist() %>%
+      data.frame(Categories=.) %>%
+      filter (Categories !='Doctors' & Categories !='Health & Medical') %>%
+      group_by(Categories) %>%
+      tally() %>%
+      rename(Freq=n) %>%
+      top_n(20,Freq) %>%
+      ggplot(.,aes(reorder(Categories, -Freq), Freq))+
+      geom_bar(stat="identity")+
+      xlab('')+
+      ggtitle('Top 20 Sub-Categories under Doctors Category')+
+      Plot_theme
+      
+```
+
+3. Check the frequency of the reviews for each sub-categories under "Doctors"
+```{r Get review under doctors, eval=FALSE}
+## Get all sub_catetories under doctors
+Doctor %>%
+      sapply(.,function(x) x$categories) %>%
+      unlist() %>%
+      data.frame(Categories=.) %>%
+      filter (Categories !='Doctors' & Categories !='Health & Medical') %>%
+      distinct(Categories) ->Sub_cate
+
+# Function to extract business_id under Doctors by a sub-category
+business_id_by_Doc_SubCate = function(Category){
+      x=sapply(business,function(x) (Category %in% x$categories) &
+                     ('Doctors' %in% x$categories) &
+                     ('Health & Medical' %in% x$categories))
+      SubCate_business=business[x]
+      sapply(SubCate_business,function(x) x$business_id)
+}
+
+#Get all business IDs for all sub-catetories
+Sub_Cate_bus_id=lapply(Sub_cate$Categories,
+                       function(x) business_id_by_Doc_SubCate(x))
+
+# Function to get reviews by business ID
+findreview_by_business_id = function (ID){
+      x=sapply(review,function(x) x$business_id %in% ID)
+      review[x]
+}
+
+# Get reviews for all business IDs for each sub-category
+Doc_reviews=sapply(Sub_Cate_bus_id,function(x) findreview_by_business_id(x))
+```
+
+```{r Plot histogram of review frequency}
+Sub_cate$ReviewNum=sapply(Doc_reviews,length)
+
+Sub_cate %>%
+      top_n(20,ReviewNum) %>%
+      ggplot(.,aes(reorder(Categories, -ReviewNum),ReviewNum))+
+      geom_bar(stat="identity")+
+      xlab('')+
+      ggtitle('Top 20 Sub-Category reviews under Doctors Category')+
+      Plot_theme
+
+```
+
+## Next Step
+
+The review content data for each business_id will be analyzed using text mining. A marchine learning method (e.g. SVM, cluster analysis, NNK, etc.) will be employed to build a detection model that would automatically sub-categorize a "Doctors" business.
